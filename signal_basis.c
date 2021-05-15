@@ -2,7 +2,7 @@
 #include <signal.h>
 #include <unistd.h>
 #include <stdlib.h>
-// #include <string.h>
+#include <string.h>
 
 static void sigHandler(int sig) {
     if(sig == SIGINT) {
