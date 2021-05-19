@@ -53,7 +53,7 @@ int main(int argc, char *argv[]) {
     if(sigaction(SIGCHLD, &act, NULL) == -1) {
         printf("error\n");
     }
-    
+
     printf("[pid](%d): start\n", getpid());
 
     for(int i = 0; i < conc_amnt - 1; i++) {
@@ -76,7 +76,7 @@ int main(int argc, char *argv[]) {
     //向子进程发送中断信号
     for(int i = 0; i < conc_amnt - 1; i++) {
         kill(pids[i], 2);
-    }
+    } 
 
     //等待信号
     while(conc_amnt > 1) {
