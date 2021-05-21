@@ -7,11 +7,11 @@
 
 pthread_mutex_t mutexs[5]; //互斥量数组
 //哲学家的动作
-int philosopher(void * args) {
+void philosopher(void * args) {
     int i = *((int *)args) + 1;
 
     for(int j = 0; j < 30; j++) {
-        // printf("\n");
+        // 哲学家思考
         printf("\n[No.%d][tid](%ld): think: %d\n", i, (long)pthread_self(), j + 1);
         
         //先拿起左边的筷子
@@ -65,5 +65,6 @@ int main() {
     for(int i = 0; i < 5; i++) {
         pthread_mutex_destroy(&mutexs[i]);
     }
+    //退出主线程
     exit(0);
 }
