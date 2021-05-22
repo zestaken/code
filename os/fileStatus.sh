@@ -1,6 +1,5 @@
 clear
 
-
 echo "Input file name: "
 read filename
 totalCount=0
