@@ -1,3 +1,4 @@
+#! /bin/bash
 clear
 
 echo "Input file name: "
@@ -13,30 +14,26 @@ fi
 
 fileStatus=$(ls -l "$filename" | awk '{printf("fileStatus = %s", $1)}')
 
-echo "$fileStatus"
+echo "fileStatus: $fileStatus"
 
-fileSize=$(ls -lh "$filename" | awk '{printf("fileSize = %s", $5)}')
+fileSize=$(ls -l "$filename" | awk '{printf("fileSize = %s", $5)}')
 
-echo "$fileSize"
+echo "totalCount: $totalCount"
+echo "changeCount: $changeCount"
 
-echo "$totalCount"
-echo "$changeCount"
-
-while [ $totalCount -lt 10 -o $changeCount -lt 2 ]
+while [[ $totalCount -lt 10 &&  $changeCount -lt 2 ]]
 do
-    # sleep 5
+     sleep 5
     echo "Test file status..."
-    newFileSize=$(ls -lh "$filename" | awk '{printf("fileSize = %s", $5)}')
-    if [ $newFileSize -ne $fileSize ] 
+    newFileSize=$(ls -l "$filename" | awk '{printf("fileSize = %s", $5)}')
+    if [[ $newFileSize -ne  $fileSize ]]
     then
-        $fileSize=$newFileSize
-        echo "file [$filename] size changed to [$filesize]"
-        temp1=$changeCount
-        changeCount=$( $temp1 + 1)
+        fileSize=$newFileSize
+        echo "file [$filename] size changed to [ $fileSize ]"
+        changeCount=`expr $changeCount + 1`
         totalCount=0
     else
-        temp2=$totalCount
-        totalCount=$($temp2 +1)
+        totalCount=`expr $totalCount + 1`
     fi
 done
 
