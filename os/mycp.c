@@ -11,6 +11,9 @@ int main(int argc, char *argv[]) {
     char *srcPath = argv[1];
     char *dstPath = argv[2];
 
+    printf("%s\n", srcPath);
+    printf("%s\n", dstPath);
+
     //打开文件
     int srcFd, dstFd;
     srcFd = open(srcPath, O_RDONLY);
@@ -20,9 +23,9 @@ int main(int argc, char *argv[]) {
     fprintf(stderr, "Error opening file: %s\n", strerror(errno));
 
     //读取源文件写入目的文件
-    char *buffer[100];
-    while(read(srcFd, buffer, 100) != -1) {
-        write(dstFd, buffer, 100);
+    char buffer[1];
+    while(read(srcFd, buffer, 1) > 0 ) {
+        write(dstFd, buffer, 1);
     }
 
     return 0;
