@@ -23,6 +23,7 @@ void philosopher(void * args) {
         if(flag == 0) {
             //拿起右边的筷子
             printf("[No.%d][tid](%ld): get right chopstick\n", i, (long)pthread_self());
+            sleep(1);
             //放下左边的筷子
             pthread_mutex_unlock(&(mutexs[i % 5]));
             printf("[No.%d][tid](%ld): put down left chopstick\n", i, (long)pthread_self());
@@ -35,6 +36,7 @@ void philosopher(void * args) {
             // 放下左边的筷子
             pthread_mutex_unlock(&(mutexs[i % 5]));
             printf("[No.%d][tid](%ld): put down left chopstick\n", i, (long)pthread_self());
+            sleep(1);
         }
     }
     //线程退出
