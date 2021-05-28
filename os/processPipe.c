@@ -4,6 +4,9 @@
 #include <stdlib.h>
 #include <sys/wait.h>
 
+char *bufin1 = "Child process 1 is sending a message!";
+char *bufin2 = "Child process 2 is sending a message!";
+
 int main() {
 
     int fd[2]; //文件描述符数组
