@@ -13,44 +13,60 @@ int main() {
     pid_t childPid1, childPid2;
 
     if(pipe(fd) == -1) {
-        perror("Falied to create a pipe");
+        perror("Failed to create a pipe");
         return 1;
     }
 
     childPid1 = fork();
-    if(childPid1 == -1) {
+    if (childPid1 == -1) {
         perror("Failed to fork");
         return 1;
-    } else if(childPid1 > 0) {
+    } else if (childPid1 > 0) {
         //父进程等待子进程结束
         waitpid(childPid1,NULL,0);
+	printf("parent1 pid[%d] ppid[%d]\n", getpid(), getppid());
         //关闭管道写文件描述符
         close(fd[1]);
-        char bufout1[100];
-        read(fd[0], bufout1, (size_t)strlen(bufin1));
-        printf("%s\n", bufout1);
+        int bufsize = (size_t)(strlen(bufin1) + 1);
+        char bufout1[bufsize];
+	memset((void*)bufout1,0,sizeof(bufout1));
+	int num1 = 0;
+        num1 = read(fd[0], bufout1, (size_t)strlen(bufin1));
+        printf("childmes1: %s  nums: %d\n", bufout1,  num1);
 
         childPid2 = fork();
         if(childPid2 == -1) {
             perror("Failed to fork");
             return 1;
-        } else if(childPid2 > 0) {
+        } else if (childPid2 > 0) {
             //父进程等待第二个子进程结束
             waitpid(childPid2, NULL, 0);
+	    printf("parent2 pid[%d] ppid[%d]\n", getpid(), getppid());
+
             //关闭管道写文件描述符
             close(fd[1]);
+
             int bufsize = (size_t)(strlen(bufin2) + 1);
             char bufout2[bufsize];
-            read(fd[0], bufout2, bufsize);
-            read(fd[0], bufout2, bufsize);
-            printf("%s\n", bufout2);
-            exit(0);
+            char bufout3[bufsize];
+	    memset((void*)bufout2, 0, sizeof(bufout2));
+	    memset((void*)bufout3, 0, sizeof(bufout3));
+	    int num2 = 0;
+	    int num3 = 0;
+	    
+            num2 = read(fd[0], bufout2, bufsize);
+            num3 = read(fd[0], bufout3, bufsize);
+
+            printf("childmes2: %s num2: %d\n", bufout2, num2);
+            printf("childmes2: %s num3: %d\n", bufout3, num3);
+
+	    exit(0);
         } else {
-            //要写入管道的字符串
             //关闭管道读文件
             close(fd[0]);
             //将字符串通过管道写入缓冲区
             write(fd[1], bufin2, (size_t)strlen(bufin2));
+	    printf("child2 pid[%d] ppid[%d]\n", getpid(), getppid());
             exit(0);
         }
     } else {
@@ -59,6 +75,8 @@ int main() {
         close(fd[0]);
         //将字符串通过管道写入缓冲区
         write(fd[1], bufin1, (size_t)strlen(bufin1));
+	printf("child1 pid[%d] ppid[%d]\n", getpid(), getppid());
         exit(0);
     }
+
 }
