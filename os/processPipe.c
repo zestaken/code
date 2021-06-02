@@ -17,6 +17,7 @@ int main() {
         return 1;
     }
 
+    //父进程创建第一个子进程
     childPid1 = fork();
     if (childPid1 == -1) {
         perror("Failed to fork");
