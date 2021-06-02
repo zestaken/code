@@ -6,6 +6,7 @@
 #include <sys/syscall.h>
 
 pthread_mutex_t mutexs[5]; //互斥量数组
+
 //哲学家的动作
 void philosopher(void * args) {
     int i = *((int *)args) + 1;
