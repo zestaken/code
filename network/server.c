@@ -6,44 +6,58 @@
 #include <netinet/in.h>		//IP地址和端口相关定义，比如struct sockaddr_in等
 #include <arpa/inet.h>		//inet_pton()等函数相关
 #include <string.h>		//bzero()函数相关
+#include <errno.h> //错误处理
+
+int port = 1234;
 
 int main(int argc, char *argv[]) {
     
     //定义监听套接字和连接套接字
     int listenfd, connectfd;
     struct sockaddr_in server, client;
-    size_t sin_size = (size_t)(sizeof(struct sockaddr_in));
+    socklen_t sin_size = (socklen_t)(sizeof(struct sockaddr_in));
 
-    if( (listenfd = socket(PF_INET, SOCK_STREAM,0) == -1) {
+    //socket
+    if( (listenfd = socket(PF_INET, SOCK_STREAM,0))== -1) {
         perror("Create socket failed!");
         exit(-1);
     }
 
+    //初始化监听的ip和端口
     bzero(&server, sizeof(server));
     server.sin_family = PF_INET;
-    server.sin_port = 12345;
-    server.sin_addr.s_addr = htonl(INADDR_ANY);
+    server.sin_port = htons(port);
+    server.sin_addr.s_addr = htonl(INADDR_ANY); //监听所有的ip
 
-    if( (bind(listenfd, (struct sockaddr_in *)&server, sin_size)) == -1) {
-        perror("Bind error.");
+    //绑定监听的端口
+    if( (bind(listenfd, (struct sockaddr *)&server, sin_size)) == -1) {
+        perror("Bind error:");
+        printf("bind: %d\n", errno);
         exit(-1);
     }
 
-    if( (listen(listenfd, BACKLOG)) == -1) {
+    //监听端口
+    if( (listen(listenfd, 5)) == -1) {
         perror("Listen error.");
         exit(-1);
     }
     
+    //等待客户端的连接
     while(1) {
-        if( (connectfd = accept(listenfd, (struct sockaddr_in *)&client, sin_size)) == -1) {
+        if( (connectfd = accept(listenfd, (struct sockaddr *)&client, &sin_size)) == -1) {
             perror("Accept error.");
             exit(-1);
         }
+
         printf("You get a connectiong from %s\n", inet_ntoa(client.sin_addr));
+        //向客户端发消息
         send(connectfd, "Welcom to server.", 22, 0);
+        //关闭和客户端的连接套接字
         close(connectfd);
     }
     
+    //关闭监听的连接套接字
     close(listenfd);
 
+    return 0;
 }
