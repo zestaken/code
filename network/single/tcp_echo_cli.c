@@ -13,28 +13,42 @@
 //业务逻辑处理函数
 int echo_rqt(int sockfd) {
     //声明缓冲区
-    char buf[MAX_CMD_STR + 1];
+    char buf1[MAX_CMD_STR + 1];
 
     //循环读取，每次从stdin读取一行
-    while(fgets(buf, MAX_CMD_STR, stdin)) {
+    while(fgets(buf1, MAX_CMD_STR, stdin)) {
         //如果开头字符为exit退出程序
-        if(strncmp(buf, "exit", 4) == 0) {
+        if(strncmp(buf1, "exit", 4) == 0) {
             return 0;
         }
         //获取读取的字符串的长度
-        int len_h = strnlen(buf, MAX_CMD_STR);
+        int len_h = strnlen(buf1, MAX_CMD_STR);
         //将最后一位字符由\n改为\0
-        buf[len_h - 1] = '\0';
+        buf1[len_h - 1] = '\0';
         
         //将len_h转换为网络字节序，发送给服务器
-        int len_n = htons(len_h);
+        int len_n = htonl(len_h);
         write(sockfd, &len_n, sizeof(len_n));
         //随后将按指定长度发送缓存数据
-        write(sockfd, buf, len_h);
+        write(sockfd, buf1, len_h);
 
-        //读取服务器数据
+         //读取服务器数据
+        int len_n1, len_h1, res = 0, res1 = 0;
+        char buf2[MAX_CMD_STR + 1];
+        read(sockfd, &len_n1, sizeof(len_n1));
+        len_h1 = ntohl(len_n1);
+        char *tmp = buf2;
+        printf("读取服务器数据之前\n");
+        printf("len_h1: %d\n", len_h1);
+        while(res < len_h1) {
+            res1 = read(sockfd, tmp, len_h1);
+            tmp = tmp + res1;
+            res += res1;
+        }
+        printf("读取完服务器数据，打印之前\n");
+        printf("[echo_rep] %s\n", buf2);
     }
-
+ 
     return 0;
 }
 
@@ -76,7 +90,7 @@ int main(int argc, char *argv[]) {
     }else if(res == 0) {
         //将ip和port转换为主机字节序，打印，以验证转换成功
         inet_ntop(PF_INET, &server.sin_addr.s_addr, ip_h, sin_size);
-        printf("[srv] server[%s:%d] is connected!\n", ip_h, ntohs(port_n));
+        printf("[cli] server[%s:%d] is connected!\n", ip_h, ntohs(port_n));
 
         //业务处理
         echo_rqt(connectfd);
