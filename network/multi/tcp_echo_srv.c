@@ -8,6 +8,7 @@
 #include <string.h>		//bzero()函数相关
 #include <signal.h>    //信号处理相关
 #include <errno.h> //错误处理相关
+#include <wait.h>
 
 #define MAX_CMD_STR 100
 
@@ -48,24 +49,33 @@ int echo_rep(int sockfd) {
         struct PDU *pdu;
         //读取客户端发送的字符串
         //读取应读取的字符串长度
-        read(sockfd, &pin_n, sizeof(pin_n));
-        read(sockfd, &len_n, sizeof(len_n));
+        if(read(sockfd, &pin_n, sizeof(pin_n)) == 0) {
+                printf("res == 0 exit\n");
+                return pin;
+        }
+        if(read(sockfd, &len_n, sizeof(len_n)) == 0) {
+                printf("res == 0 exit\n");
+                return pin;
+        }
         pin_h = ntohl(pin_n);
         len_h = ntohl(len_n);
         printf("pin_h: %d\n", pin_h);
         printf("len_h: %d\n", len_h);
         buf = (char *)malloc(sizeof(char) * len_h);
         pdu = (struct PDU *)malloc(sizeof(struct PDU));
+        memset(buf, 0, sizeof(buf));
+        memset(pdu, 0, sizeof(*pdu));
         char *tmp = buf;
         printf("读取客户端数据之前\n");
 
-        if(len_h == 0) {
-            printf("len_h == 0 exit\n");
-            return -1;
-        }
+        // if(len_h == 0) {
+        //     printf("len_h == 0 exit\n");
+        //     return -1;
+        // }
 
         while(res < len_h) {
             res1 = read(sockfd, tmp, len_h);
+            printf("res1: %d\n", res1);
             if(res1 < 0) {
                 printf("[srv] read data return %d and errno is %d\n", res1, errno);
                 if(errno == EINTR) {
@@ -87,31 +97,33 @@ int echo_rep(int sockfd) {
                 printf("res == 0 exit\n");
                 free(buf);
                 free(pdu);
-                return -1;
+                return pin;
             }
 
             res += res1;
-            printf("res: %d\n", res);
-            printf("tmp: %s\n", tmp);
             tmp += res1;
-            printf("res1: %d\n", res1);
         }
 
         if(sig_to_exit == 1) {
             printf("sig_to_exit \n");
             return -1;
         }
+
         pdu->pin = pin_n;
         pdu->len = len_n;
+
         strcpy(pdu->buf, buf);
         printf("[echo_rqt] %s\n", pdu->buf);  
+        printf("$$$$$$$$$$$$$\n");
         //发送pdu
         char buf2[MAX_CMD_STR + 9];
         //将结构体转换为字符串
         memcpy(buf2 + 0, &(pdu->pin), sizeof(pdu->pin));
         memcpy(buf2 + sizeof(pdu->pin), &(pdu->len), sizeof(pdu->len));
         memcpy(buf2 + sizeof(pdu->pin) + sizeof(pdu->len), pdu->buf, sizeof(pdu->buf));
-        write(sockfd, buf2, 8 + sizeof(pdu->buf));
+        write(sockfd, buf2, 8 + strlen(pdu->buf));
+        free(buf);
+        free(pdu);
         pin = pin_h;
     }
     return pin;
@@ -146,13 +158,10 @@ int main(int argc, char *argv[]) {
     socklen_t sin_size = (socklen_t)(sizeof(struct sockaddr_in));
     int listenfd, connectfd; //声明监听描述符和连接描述符
 
-    //todo 检查用户是否正确输入参数
     if(argc != 3) {
         printf("Usage: %s <ip> <port>\n", argv[0]);
         exit(-1);
     }
-
-    //todo 父进程启动时打开相应文件
 
     //初始化socket地址
     char ip_h[20];
@@ -171,7 +180,6 @@ int main(int argc, char *argv[]) {
     
     FILE *fp = fopen("stu_srv_res_p.txt", "a");
     printf("[srv](%d) stu_srv_res_p.txt is opened!\n", getpid());
-
 
     printf("[srv](%d) server[%s:%d] is initializing!\n", getpid(), ip_h, ntohs(port_n));
     fprintf(fp, "[srv](%d) server[%s:%d] is initializing!\n", getpid(), ip_h, ntohs(port_n));
@@ -234,7 +242,8 @@ int main(int argc, char *argv[]) {
              //关闭连接套接字
             close(connectfd);
             printf("[srv](%d) connfd is closed!\n", getpid());
-            fprintf(fp1, "[srv](%d) connfd is closed!\n", getpid());
+            int fprintf1 = fprintf(fp1, "[srv](%d) connfd is closed!\n", getpid());
+            printf("-------------------%d------------\n", fprintf1);
             
             exit(0);
         }
