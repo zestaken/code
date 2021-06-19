@@ -1,0 +1,12 @@
+[cli](1947) child process 1 is created![cli](1947) server[127.0.0.1:4000] is connected![cli](1947) connfd is closed![cli](1947) parent process is going to exit![cli](2014) child process 1 is created!
+[cli](2014) server[127.0.0.1:4000] is connected!
+[cli](2014) connfd is closed!
+[cli](2014) parent process is going to exit!
+[cli](2030) child process 1 is created!
+[cli](2030) server[127.0.0.1:4000] is connected!
+[cli](2030) connfd is closed!
+[cli](2030) parent process is going to exit!
+[cli](2197) child process 1 is created!
+[cli](2197) server[127.0.0.1:4000] is connected!
+[cli](2197) connfd is closed!
+[cli](2197) parent process is going to exit!

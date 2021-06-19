@@ -8,50 +8,62 @@
 #include <string.h>		//bzero()函数相关
 #include <errno.h>      //错误处理相关
 #include <fcntl.h> //文件读写相关
-#include <stdarg.h>
+#include <string.h>
 
 #define MAX_CMD_STR 100
-#define bprintf(fp, format, ...) \
-    if(fp == NULL){printf(format, ##_VA_ARGS_);} \
-    else{printf(format, ##_VA_ARGS_); \
-            fprintf(fp, format, ##_VA_ARGS_);fflush(fp);}
 
 //业务逻辑处理函数
 int echo_rqt(int sockfd, int pin) {
+    //定义PDU结构体
+    struct PDU{
+        char pin_s[4];
+        char len_s[4];
+        char buf[MAX_CMD_STR + 1];
+    };
     //声明缓冲区
-    char buf[MAX_CMD_STR + 9];
+    char buf[MAX_CMD_STR + 1];
 
     //拼接文件名
     char filename[20];
-    sprintf(filename, "stu_cli_res_%d.txt", pin);
+    sprintf(filename, "td%d.txt", pin);
+    FILE *fp = fopen(filename, "r");
 
-    //循环读取，每次从stdin读取一行
-    while(fgets(buf, MAX_CMD_STR, filename)) {
+    //循环读取，每次从tdPIN.txt文件中读取一行
+    while(fgets(buf, MAX_CMD_STR, fp)) {
         //如果开头字符为exit退出程序
         if(strncmp(buf, "exit", 4) == 0) {
             return 0;
         }
+        //为PDU分配空间
+        struct PDU *pdu = (struct PDU *)malloc(sizeof(struct PDU));
         //获取读取的字符串的长度
         int len = strnlen(buf, MAX_CMD_STR);
         //将最后一位字符由\n改为\0
         buf[len - 1] = '\0';
         int len_h = len + 8;
         
-        //将len_h转换为网络字节序，发送给服务器
-        int len_n = htons(len_h);
-        int pin_n = htons(pin);
-        //先发送pin和长度
-        write(sockfd, &pin, sizeof(pin_n));
-        write(sockfd, &len_n, sizeof(len_n));
-        //随后将按指定长度发送缓存数据
-        write(sockfd, buf, len_h);
+        //将len_h和pin转换为网络字节序
+        int len_n = htonl(len_h);
+        int pin_n = htonl(pin);
+        //构建PDU
+        char pin_s[4], len_s[4];
+        sprintf(pin_s, "%d", pin);
+        sprintf(len_s, "%d", len_h);
+        strcpy(pdu->pin_s, pin_s);
+        strcpy(pdu->len_s, len_s);
+        strcpy(pdu->buf, buf);
 
-        //读取服务器数据
-        int res = 0;
-        while(res < len_h) {
-            res += read(sockfd, buf, len_h);
-        }
+        printf("pdu pin: %s\n", pdu->pin_s);
+        printf("pdu len: %s\n", pdu->len_s);
+        printf("pdu buf: %s\n", pdu->buf);
+        //发送pdu
+        write(sockfd, pdu, sizeof(pdu));
 
+        //todo 读取服务器数据
+        // int res = 0;
+        // while(res < len_h) {
+        //     res += read(sockfd, buf, len_h);
+        // }
     }
 
     return 0;
@@ -102,10 +114,9 @@ int main(int argc, char *argv[]) {
             FILE *fp = fopen(filename, "a");
             printf("[cli](%d) %s is created\n", getpid(), filename);
             //写子进程启动消息到打开的文件中去
-            // char message[30];
-            bprintf(fp, "[cli](%d) child process %d is created!", getpid(), pin);
-            // sprintf(message, "[cli](%d) child process %d is created!",  getpid(), pin);
-            // write(fp, message, sizeof("[cli](%d) child process %d is created!") + 1);
+            fprintf(fp, "[cli](%d) child process %d is created!\n", getpid(), pin);
+            printf("[cli](%d) child process %d is created!\n", getpid(), pin);
+
 
             //获取socket连接描述符
             if((connectfd = socket(PF_INET, SOCK_STREAM, 0)) == -1) {
@@ -120,6 +131,7 @@ int main(int argc, char *argv[]) {
             }else if(res == 0) {
                 //将ip和port转换为主机字节序，打印，以验证转换成功
                 inet_ntop(PF_INET, &server.sin_addr.s_addr, ip_h, sin_size);
+                fprintf(fp, "[cli](%d) server[%s:%d] is connected!\n", getpid(), ip_h, ntohs(port_n));
                 printf("[cli](%d) server[%s:%d] is connected!\n", getpid(), ip_h, ntohs(port_n));
 
                 //业务处理
@@ -128,20 +140,15 @@ int main(int argc, char *argv[]) {
 
             //关闭连接套接字
             close(connectfd);
-            // char message3[30];
-            // char message4[45];
-            // sprintf(message3, "[cli](%d) connfd is closed!", getpid());
-            // sprintf(message4, "[cli](%d) parent process is going to exit!", getpid());
-            // int len3 = strlen(message3);
-            // int len4 = strlen(message4);
-            // write(fp, message3, len3);
-            // write(fp, message4, len4);
-            bprintf(fp, "[cli](%d) connfd is closed!", getpid());
-            bprintf(fp, "[cli](%d) parent process is going to exit!", getpid());
+            fprintf(fp, "[cli](%d) connfd is closed!\n", getpid());
+            fprintf(fp, "[cli](%d) parent process is going to exit!\n", getpid());
+            printf("[cli](%d) connfd is closed!\n", getpid());
+            printf("[cli](%d) parent process is going to exit!\n", getpid());
+
 
             //关闭文件
             fclose(fp);
-            printf("[cli](%d) stu_cli_res_%d.txt is closed!", getpid(), pin);
+            printf("[cli](%d) stu_cli_res_%d.txt is closed!\n", getpid(), pin);
 
             exit(0);
         } else if(pid > 0) {
@@ -154,11 +161,9 @@ int main(int argc, char *argv[]) {
             FILE *fp = fopen(filename, "a");
             printf("[cli](%d) %s is created\n", getpid(), filename);
             //写子进程启动消息到打开的文件中去
-            // char message[40];
-            // sprintf(message, "[cli](%d) child process %d is created!",  getpid(), pin);
-            // int len = strlen(message);
-            // write(fp, message, len);
-            bprintf(fp, "[cli](%d) child process %d is created!", getpid(), pin);
+            fprintf(fp, "[cli](%d) child process %d is created!\n", getpid(), pin);
+            printf("[cli](%d) child process %d is created!\n", getpid(), pin);
+
 
             //获取socket连接描述符
             if((connectfd = socket(PF_INET, SOCK_STREAM, 0)) == -1) {
@@ -173,11 +178,8 @@ int main(int argc, char *argv[]) {
             }else if(res == 0) {
                 //将ip和port转换为主机字节序，写入到对应文件
                 inet_ntop(PF_INET, &server.sin_addr.s_addr, ip_h, sin_size);
-                // char message2[40];
-                // sprintf(message2,"[cli](%d) server[%s:%d] is connected!", getpid(), ip_h, ntohs(port_n));
-                // int len2 = strlen(message2);
-                // write(fp, message2, len2);
-                bprintf(fp, "[cli](%d) server[%s:%d] is connected!", getpid(), ip_h, ntohs(port_n));
+                fprintf(fp, "[cli](%d) server[%s:%d] is connected!\n", getpid(), ip_h, ntohs(port_n));
+                printf("[cli](%d) server[%s:%d] is connected!\n", getpid(), ip_h, ntohs(port_n));
 
                 //业务处理
                 echo_rqt(connectfd, pin);
@@ -185,20 +187,15 @@ int main(int argc, char *argv[]) {
 
             //关闭连接套接字
             close(connectfd);
-            // char message3[30];
-            // char message4[45];
-            // sprintf(message3, "[cli](%d) connfd is closed!", getpid());
-            // sprintf(message4, "[cli](%d) parent process is going to exit!", getpid());
-            // int len3 = strlen(message3);
-            // int len4 = strlen(message4);
-            // write(fp, message3, len3);
-            // write(fp, message4, len4);
-            bprintf(fp, "[cli](%d) connfd is closed!", getpid());
-            bprintf(fp, "[cli](%d) parent process is going to exit!", getpid());
+            fprintf(fp, "[cli](%d) connfd is closed!\n", getpid());
+            fprintf(fp, "[cli](%d) parent process is going to exit!\n", getpid());
+            printf("[cli](%d) connfd is closed!\n", getpid());
+            printf("[cli](%d) parent process is going to exit!\n", getpid());
+
 
             //关闭文件
             fclose(fp);
-            printf("[cli](%d) stu_cli_res_%d.txt is closed!", getpid(), pin);
+            printf("[cli](%d) stu_cli_res_%d.txt is closed!\n", getpid(), pin);
             exit(0);
         }
     }
