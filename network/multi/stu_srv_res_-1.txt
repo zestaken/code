@@ -1,0 +1,2 @@
+[cli](62195) child process is created!
+[srv](62195) child process is going to exit!

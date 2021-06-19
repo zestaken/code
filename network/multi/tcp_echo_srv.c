@@ -15,14 +15,12 @@ int sig_to_exit = 0;
 int sig_type = 0;
 
 void sig_int(int signo) {
-    printf("[srv] SIGINT is coming!\n");
     sig_to_exit = 1;
     sig_type = signo;
     printf("[srv](%d) SIGINT is coming!\n", getpid());
 }
 
 void sig_pipe(int signo) {
-    printf("[srv] SIGPIPE is coming!\n");
     sig_type = signo;
     printf("[srv](%d) SIGPIPE is coming!\n", getpid());
 }
@@ -36,22 +34,36 @@ void sig_child(int signo) {
     };
 }
 
-void echo_rep(int sockfd) {
+int echo_rep(int sockfd) {
+    struct PDU {
+        int pin;
+        int len;
+        char buf[MAX_CMD_STR + 1];
+    };
+    int pin = 0;
 
     while(1) {
-        int len_h = 0, len_n = 0, res = 0, res1 = 0;
+        int len_h = 0,len_n = 0,  res = 0, res1 = 0,pin_h = 0, pin_n = 0;
         char *buf;
+        struct PDU *pdu;
         //读取客户端发送的字符串
         //读取应读取的字符串长度
+        read(sockfd, &pin_n, sizeof(pin_n));
         read(sockfd, &len_n, sizeof(len_n));
+        pin_h = ntohl(pin_n);
         len_h = ntohl(len_n);
+        printf("pin_h: %d\n", pin_h);
         printf("len_h: %d\n", len_h);
         buf = (char *)malloc(sizeof(char) * len_h);
+        pdu = (struct PDU *)malloc(sizeof(struct PDU));
         char *tmp = buf;
         printf("读取客户端数据之前\n");
+
         if(len_h == 0) {
-            return;
+            printf("len_h == 0 exit\n");
+            return -1;
         }
+
         while(res < len_h) {
             res1 = read(sockfd, tmp, len_h);
             if(res1 < 0) {
@@ -60,15 +72,22 @@ void echo_rep(int sockfd) {
                     if(sig_type == SIGINT) {
                         //  若是中断信号，释放资源退出
                         free(buf);
-                        return;
+                        free(pdu);
+                        printf("sigint\n");
+                        return -1;
                     } 
                     continue;
                 }                
                 //若是其它错误，释放资源退出
                 free(buf);
-                return;
+                free(pdu);
+                printf("other errno\n");
+                return -1;
             } else if(res1 == 0) {
-                return;
+                printf("res == 0 exit\n");
+                free(buf);
+                free(pdu);
+                return -1;
             }
 
             res += res1;
@@ -77,13 +96,25 @@ void echo_rep(int sockfd) {
             tmp += res1;
             printf("res1: %d\n", res1);
         }
+
         if(sig_to_exit == 1) {
-            return;
+            printf("sig_to_exit \n");
+            return -1;
         }
-        printf("[echo_rqt] %s\n", buf);  
-        write(sockfd, &len_n, sizeof(len_n));
-        write(sockfd, buf, len_h);
+        pdu->pin = pin_n;
+        pdu->len = len_n;
+        strcpy(pdu->buf, buf);
+        printf("[echo_rqt] %s\n", pdu->buf);  
+        //发送pdu
+        char buf2[MAX_CMD_STR + 9];
+        //将结构体转换为字符串
+        memcpy(buf2 + 0, &(pdu->pin), sizeof(pdu->pin));
+        memcpy(buf2 + sizeof(pdu->pin), &(pdu->len), sizeof(pdu->len));
+        memcpy(buf2 + sizeof(pdu->pin) + sizeof(pdu->len), pdu->buf, sizeof(pdu->buf));
+        write(sockfd, buf2, 8 + sizeof(pdu->buf));
+        pin = pin_h;
     }
+    return pin;
 }
 
 
@@ -138,7 +169,12 @@ int main(int argc, char *argv[]) {
     //将ip和port转换为主机字节序，打印，以验证转换成功
     inet_ntop(PF_INET, &server.sin_addr.s_addr, ip_h, sin_size);
     
-    printf("[srv] server[%s:%d] is initializing!\n", ip_h, ntohs(port_n));
+    FILE *fp = fopen("stu_srv_res_p.txt", "a");
+    printf("[srv](%d) stu_srv_res_p.txt is opened!\n", getpid());
+
+
+    printf("[srv](%d) server[%s:%d] is initializing!\n", getpid(), ip_h, ntohs(port_n));
+    fprintf(fp, "[srv](%d) server[%s:%d] is initializing!\n", getpid(), ip_h, ntohs(port_n));
 
     //获取socket监听描述符
     if((listenfd = socket(PF_INET, SOCK_STREAM, 0)) == -1) {
@@ -158,31 +194,61 @@ int main(int argc, char *argv[]) {
         exit(-1);
     }
 
+
     //开启while主循环，直至sig_to_exit指示程序退出
     while(!sig_to_exit) {
         if((connectfd = accept(listenfd, (struct sockaddr *)&client, &sin_size)) == - 1) {
-            printf("accept\n");
             perror("accept error");
             continue;
         }
-        
         //打印client的ip和端口
         char cli_ip_h[20];
         inet_ntop(AF_INET, &client.sin_addr.s_addr, cli_ip_h, sin_size);
         int cli_port_h = ntohs(client.sin_port);
-        printf("[srv] client[%s:%d] is accepted!\n", cli_ip_h, cli_port_h);
+        printf("[srv](%d) client[%s:%d] is accepted!\n", getpid(), cli_ip_h, cli_port_h);
+        fprintf(fp, "[srv](%d) client[%s:%d] is accepted!\n", getpid(), cli_ip_h, cli_port_h);
 
-        //调用业务处理函数echo_rep()
-        echo_rep(connectfd);
+        //创建子进程
+        pid_t pid = fork();
 
-        //关闭连接套接字
-        close(connectfd);
-        printf("[srv] connfd is closed!\n");
+        if(pid == 0) {
+            char filename[30];
+            sprintf(filename, "stu_srv_res_%d.txt", getpid());
+            FILE *fp1 = fopen(filename, "a");    
+            printf("[srv](%d) stu_srv_res_%d.txt is opened!\n", getpid(), getpid());
+
+            printf("[cli](%d) child process is created!\n", getpid());
+            fprintf(fp1, "[cli](%d) child process is created!\n", getpid());
+            //调用业务处理函数echo_rep()
+            int pin = echo_rep(connectfd);
+
+            //文件重命名
+            char filename2[20];
+            sprintf(filename2, "stu_srv_res_%d.txt", pin);
+            rename(filename, filename2);
+            //关闭res文件
+            printf("[srv](%d) child process is going to exit!\n", getpid());
+            fprintf(fp1, "[srv](%d) child process is going to exit!\n", getpid());
+            fclose(fp1);
+            printf("[srv](%d) %s is closed!\n", getpid(), filename2);
+             //关闭连接套接字
+            close(connectfd);
+            printf("[srv](%d) connfd is closed!\n", getpid());
+            fprintf(fp1, "[srv](%d) connfd is closed!\n", getpid());
+            
+            exit(0);
+        }
+
     }
 
     //关闭监听套接字
     close(listenfd);
-    printf("[srv] listenfd is closed!\n");
-    printf("[srv] server is exiting\n");
+    printf("[srv](%d) listenfd is closed!\n", getpid());
+    printf("[srv](%d) parent process is going to exit!\n",getpid());
+    fprintf(fp, "[srv](%d) listenfd is closed!\n", getpid());
+    fprintf(fp, "[srv](%d) parent process is going to exit!\n",getpid());
+    fclose(fp);
+    printf("[srv](%d) stu_srv_res_p.txt is closed!\n", getpid());
     return 0;
+
 }

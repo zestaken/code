@@ -10,3 +10,109 @@
 [cli](2197) server[127.0.0.1:4000] is connected!
 [cli](2197) connfd is closed!
 [cli](2197) parent process is going to exit!
+[cli](41636) child process 1 is created!
+[cli](41636) server[127.0.0.1:4003] is connected!
+[cli](41636) connfd is closed!
+[cli](41636) parent process is going to exit!
+[cli](41904) child process 1 is created!
+[cli](41904) server[127.0.0.1:4003] is connected!
+[cli](41904) connfd is closed!
+[cli](41904) parent process is going to exit!
+[cli](42031) child process 1 is created!
+[cli](42031) server[127.0.0.1:4003] is connected!
+[cli](42031) connfd is closed!
+[cli](42031) parent process is going to exit!
+[cli](42325) child process 1 is created!
+[cli](42325) server[127.0.0.1:4003] is connected!
+[cli](42325) connfd is closed!
+[cli](42325) parent process is going to exit!
+[cli](42486) child process 1 is created!
+[cli](42486) server[127.0.0.1:4003] is connected!
+[cli](42486) connfd is closed!
+[cli](42486) parent process is going to exit!
+[cli](42731) child process 1 is created!
+[cli](42731) server[127.0.0.1:4003] is connected!
+[cli](42731) connfd is closed!
+[cli](42731) parent process is going to exit!
+[cli](43014) child process 1 is created!
+[cli](43014) server[127.0.0.1:4003] is connected!
+[cli](43014) connfd is closed!
+[cli](43014) parent process is going to exit!
+[cli](43243) child process 1 is created!
+[cli](43243) server[127.0.0.1:4003] is connected!
+[cli](43309) child process 1 is created!
+[cli](43309) server[127.0.0.1:4003] is connected!
+[cli](43309) connfd is closed!
+[cli](43309) parent process is going to exit!
+[cli](43984) child process 1 is created!
+[cli](43984) server[127.0.0.1:4003] is connected!
+[cli](43984) connfd is closed!
+[cli](43984) parent process is going to exit!
+[cli](44485) child process 1 is created!
+[cli](44485) server[127.0.0.1:4003] is connected!
+[cli](44485) connfd is closed!
+[cli](44485) parent process is going to exit!
+[cli](47326) child process 1 is created!
+[cli](47326) server[127.0.0.1:4001] is connected!
+[cli](47326) connfd is closed!
+[cli](47326) parent process is going to exit!
+[cli](47385) child process 1 is created!
+[cli](47385) server[127.0.0.1:4001] is connected!
+[cli](47385) connfd is closed!
+[cli](47385) parent process is going to exit!
+[cli](47500) child process 1 is created!
+[cli](47500) server[127.0.0.1:4001] is connected!
+[cli](47500) connfd is closed!
+[cli](47500) parent process is going to exit!
+[cli](47615) child process 1 is created!
+[cli](47615) server[127.0.0.1:4001] is connected!
+[cli](47615) connfd is closed!
+[cli](47615) parent process is going to exit!
+[cli](48129) child process 1 is created!
+[cli](48129) server[127.0.0.1:4001] is connected!
+[cli](48129) connfd is closed!
+[cli](48129) parent process is going to exit!
+[cli](48396) child process 1 is created!
+[cli](48396) server[127.0.0.1:4001] is connected!
+[cli](48396) connfd is closed!
+[cli](48396) parent process is going to exit!
+[cli](48720) child process 1 is created!
+[cli](48720) server[127.0.0.1:4001] is connected!
+[cli](48720) connfd is closed!
+[cli](48720) parent process is going to exit!
+[cli](48956) child process 1 is created!
+[cli](48956) server[127.0.0.1:4001] is connected!
+[cli](48956) connfd is closed!
+[cli](48956) parent process is going to exit!
+[cli](49188) child process 1 is created!
+[cli](49188) server[127.0.0.1:4001] is connected!
+[cli](49188) connfd is closed!
+[cli](49188) parent process is going to exit!
+[cli](49288) child process 1 is created!
+[cli](49288) server[127.0.0.1:4001] is connected!
+[cli](49288) connfd is closed!
+[cli](49288) parent process is going to exit!
+[cli](49354) child process 1 is created!
+[cli](49354) server[127.0.0.1:4001] is connected!
+[cli](49354) connfd is closed!
+[cli](49354) parent process is going to exit!
+[cli](49585) child process 1 is created!
+[cli](49585) server[127.0.0.1:4001] is connected!
+[cli](49585) connfd is closed!
+[cli](49585) parent process is going to exit!
+[cli](49764) child process 1 is created!
+[cli](49764) server[127.0.0.1:4001] is connected!
+[cli](49764) connfd is closed!
+[cli](49764) parent process is going to exit!
+[cli](49941) child process 1 is created!
+[cli](49941) server[127.0.0.1:4001] is connected!
+[cli](49941) connfd is closed!
+[cli](49941) parent process is going to exit!
+[cli](53709) child process 1 is created!
+[cli](53709) server[127.0.0.1:4001] is connected!
+[cli](53709) connfd is closed!
+[cli](53709) parent process is going to exit!
+[cli](62193) child process 1 is created!
+[cli](62193) server[127.0.0.1:4001] is connected!
+[cli](62193) connfd is closed!
+[cli](62193) parent process is going to exit!
