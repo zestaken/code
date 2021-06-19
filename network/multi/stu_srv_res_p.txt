@@ -75,3 +75,8 @@
 [srv](62187) server[127.0.0.1:4001] is initializing!
 [srv](62187) client[127.0.0.1:55300] is accepted!
 [srv](62187) client[127.0.0.1:55301] is accepted!
+[srv](62187) server[127.0.0.1:4001] is initializing!
+[srv](62187) client[127.0.0.1:55300] is accepted!
+[srv](62187) client[127.0.0.1:55301] is accepted!
+[srv](62187) listenfd is closed!
+[srv](62187) parent process is going to exit!
