@@ -17,21 +17,31 @@ int sig_type = 0;
 void sig_int(int signo) {
     printf("[srv] SIGINT is coming!\n");
     sig_to_exit = 1;
-    sig_type = SIGINT;
+    sig_type = signo;
+    printf("[srv](%d) SIGINT is coming!\n", getpid());
 }
 
 void sig_pipe(int signo) {
     printf("[srv] SIGPIPE is coming!\n");
-    sig_type = SIGPIPE;
+    sig_type = signo;
+    printf("[srv](%d) SIGPIPE is coming!\n", getpid());
+}
+
+//处理SIGCHLD信号，避免因为子进程先于父进程结束而产生僵尸进程
+void sig_child(int signo) {
+    pid_t pid_child;
+    sig_type = signo;
+    while((pid_child = waitpid(-1, NULL, WNOHANG)) > 0) {
+         printf("[srv](%d) server child(%d) terminated!\n", getpid(), pid_child);
+    };
 }
 
 void echo_rep(int sockfd) {
 
-
     while(1) {
         int len_h = 0, len_n = 0, res = 0, res1 = 0;
         char *buf;
-    //读取客户端发送的字符串
+        //读取客户端发送的字符串
         //读取应读取的字符串长度
         read(sockfd, &len_n, sizeof(len_n));
         len_h = ntohl(len_n);
@@ -93,16 +103,25 @@ int main(int argc, char *argv[]) {
     sigemptyset(&sigact_int.sa_mask);
     sigact_int.sa_flags = 0;
     sigaction(SIGINT, &sigact_int, &old_sigact_int);
+         //安装SIGCHILD处理器
+    struct sigaction sigact_child, old_sigact_child;
+    sigact_child.sa_handler = sig_child;
+    sigemptyset(&sigact_child.sa_mask);
+    sigact_child.sa_flags = 0;
+    sigact_child.sa_flags |= SA_RESTART;
+    sigaction(SIGCHLD, &sigact_child, &old_sigact_child);
 
     struct sockaddr_in server, client;  //声明socket地址结构
     socklen_t sin_size = (socklen_t)(sizeof(struct sockaddr_in));
     int listenfd, connectfd; //声明监听描述符和连接描述符
 
-    //检查用户是否正确输入参数
+    //todo 检查用户是否正确输入参数
     if(argc != 3) {
         printf("Usage: %s <ip> <port>\n", argv[0]);
         exit(-1);
     }
+
+    //todo 父进程启动时打开相应文件
 
     //初始化socket地址
     char ip_h[20];
