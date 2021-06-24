@@ -8,7 +8,7 @@
 #include <string.h>		//bzero()函数相关
 #include <signal.h>    //信号处理相关
 #include <errno.h> //错误处理相关
-#include <wait.h>
+#include <sys/wait.h>
 
 #define MAX_CMD_STR 100
 
@@ -18,20 +18,32 @@ int sig_type = 0;
 void sig_int(int signo) {
     sig_to_exit = 1;
     sig_type = signo;
+    FILE *fp;
+    fp = fopen("stu_srv_res_p.txt", "a");
     printf("[srv](%d) SIGINT is coming!\n", getpid());
+    fprintf(fp, "[srv](%d) SIGINT is coming!\n", getpid());
+    fflush(fp);
 }
 
 void sig_pipe(int signo) {
     sig_type = signo;
+    FILE *fp;
+    fp = fopen("stu_srv_res_p.txt", "a");
     printf("[srv](%d) SIGPIPE is coming!\n", getpid());
+    fprintf(fp, "[srv](%d) SIGINT is coming!\n", getpid());
+    fflush(fp);
 }
 
 //处理SIGCHLD信号，避免因为子进程先于父进程结束而产生僵尸进程
 void sig_child(int signo) {
     pid_t pid_child;
     sig_type = signo;
+    FILE *fp;
+    fp = fopen("stu_srv_res_p.txt", "a");
     while((pid_child = waitpid(-1, NULL, WNOHANG)) > 0) {
          printf("[srv](%d) server child(%d) terminated!\n", getpid(), pid_child);
+         fprintf(fp, "[srv](%d) SIGCHLD is coming!\n", getpid());
+         fflush(fp);
     };
 }
 
@@ -42,6 +54,9 @@ int echo_rep(int sockfd) {
         char buf[MAX_CMD_STR + 1];
     };
     int pin = 0;
+    char filename1[30];
+    sprintf(filename1, "stu_srv_res_%d.txt", getpid());
+    FILE *fp1 = fopen(filename1, "a");    
 
     while(1) {
         int len_h = 0,len_n = 0,  res = 0, res1 = 0,pin_h = 0, pin_n = 0;
@@ -61,9 +76,9 @@ int echo_rep(int sockfd) {
         len_h = ntohl(len_n);
         printf("pin_h: %d\n", pin_h);
         printf("len_h: %d\n", len_h);
-        buf = (char *)malloc(sizeof(char) * len_h);
+        buf = (char *)malloc(sizeof(char) * (len_h + 1));
         pdu = (struct PDU *)malloc(sizeof(struct PDU));
-        memset(buf, 0, sizeof(buf));
+        memset(buf, 0, sizeof(*buf));
         memset(pdu, 0, sizeof(*pdu));
         char *tmp = buf;
         printf("读取客户端数据之前\n");
@@ -109,19 +124,20 @@ int echo_rep(int sockfd) {
             return -1;
         }
 
-        pdu->pin = pin_n;
-        pdu->len = len_n;
+        pdu->pin = htonl(pin_h);
+        pdu->len = htonl(len_h);
 
         strcpy(pdu->buf, buf);
         printf("[echo_rqt] %s\n", pdu->buf);  
-        printf("$$$$$$$$$$$$$\n");
         //发送pdu
         char buf2[MAX_CMD_STR + 9];
         //将结构体转换为字符串
         memcpy(buf2 + 0, &(pdu->pin), sizeof(pdu->pin));
         memcpy(buf2 + sizeof(pdu->pin), &(pdu->len), sizeof(pdu->len));
         memcpy(buf2 + sizeof(pdu->pin) + sizeof(pdu->len), pdu->buf, sizeof(pdu->buf));
-        write(sockfd, buf2, 8 + strlen(pdu->buf));
+        write(sockfd, buf2, 8 + strlen(pdu->buf) + 1);
+        fprintf(fp1, "[echo_rqt](%d) %s\n", getpid(), pdu->buf);
+        fflush(fp1);
         free(buf);
         free(pdu);
         pin = pin_h;
@@ -183,6 +199,7 @@ int main(int argc, char *argv[]) {
 
     printf("[srv](%d) server[%s:%d] is initializing!\n", getpid(), ip_h, ntohs(port_n));
     fprintf(fp, "[srv](%d) server[%s:%d] is initializing!\n", getpid(), ip_h, ntohs(port_n));
+    fflush(fp);
 
     //获取socket监听描述符
     if((listenfd = socket(PF_INET, SOCK_STREAM, 0)) == -1) {
@@ -210,42 +227,49 @@ int main(int argc, char *argv[]) {
             continue;
         }
         //打印client的ip和端口
-        char cli_ip_h[20];
+        char cli_ip_h[50];
         inet_ntop(AF_INET, &client.sin_addr.s_addr, cli_ip_h, sin_size);
         int cli_port_h = ntohs(client.sin_port);
         printf("[srv](%d) client[%s:%d] is accepted!\n", getpid(), cli_ip_h, cli_port_h);
         fprintf(fp, "[srv](%d) client[%s:%d] is accepted!\n", getpid(), cli_ip_h, cli_port_h);
+        fflush(fp);
 
         //创建子进程
         pid_t pid = fork();
 
         if(pid == 0) {
-            char filename[30];
+            close(listenfd);
+            char filename[50];
             sprintf(filename, "stu_srv_res_%d.txt", getpid());
             FILE *fp1 = fopen(filename, "a");    
             printf("[srv](%d) stu_srv_res_%d.txt is opened!\n", getpid(), getpid());
 
-            printf("[cli](%d) child process is created!\n", getpid());
-            fprintf(fp1, "[cli](%d) child process is created!\n", getpid());
+            printf("[srv](%d) child process is created!\n", getpid());
+            fprintf(fp1, "[srv](%d) child process is created!\n", getpid());
+            fflush(fp1);
             //调用业务处理函数echo_rep()
+            fclose(fp1);
             int pin = echo_rep(connectfd);
 
             //文件重命名
-            char filename2[20];
+            char filename2[50];
             sprintf(filename2, "stu_srv_res_%d.txt", pin);
             rename(filename, filename2);
-            //关闭res文件
-            printf("[srv](%d) child process is going to exit!\n", getpid());
-            fprintf(fp1, "[srv](%d) child process is going to exit!\n", getpid());
-            fclose(fp1);
-            printf("[srv](%d) %s is closed!\n", getpid(), filename2);
+            FILE *fp2 = fopen(filename2, "a");
+            fprintf(fp2, "[srv](%d) res file rename done!\n", getpid());         
              //关闭连接套接字
             close(connectfd);
             printf("[srv](%d) connfd is closed!\n", getpid());
-            int fprintf1 = fprintf(fp1, "[srv](%d) connfd is closed!\n", getpid());
-            printf("-------------------%d------------\n", fprintf1);
-            
-            exit(0);
+            fprintf(fp2, "[srv](%d) connfd is closed!\n", getpid());
+            //关闭res文件
+            printf("[srv](%d) child process is going to exit!\n", getpid());
+            fprintf(fp2, "[srv](%d) child process is going to exit!\n", getpid()); 
+            printf("[srv](%d) %s is closed!\n", getpid(), filename2);
+            fclose(fp2);
+
+            return 0;
+        } else if(pid > 0) {
+            close(connectfd);
         }
 
     }
